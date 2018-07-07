@@ -11,11 +11,11 @@
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
-#include <random>
 
 #include "benchmark/benchmark.h"
 #include "absl/strings/str_format.h"
 #include "absl/base/port.h"
+#include "boost/preprocessor.hpp"
 
 namespace {
 
@@ -236,6 +236,7 @@ void BM(benchmark::State& state) {
   for (const auto& set : s) {
     assert(set.size() == s.front().size());
     assert(set.bucket_count() == s.front().bucket_count());
+    (void)set; // silence warning in opt
   }
   if (kDensityT == Density::kMin) {
     assert(LoadFactor(s.front()) < 0.6);
@@ -836,22 +837,23 @@ struct Iterate_Cold {
   }
 };
 
-BENCHMARK_TEMPLATE(BM, FindHit_Hot, std::unordered_set, 4, Density::kMin)      //
-    ->Arg(1 << 4)   //
-    ->Arg(1 << 8)   //
-    ->Arg(1 << 12)  //
-    ->Arg(1 << 16)  //
-    ->Arg(1 << 20);
 
-BENCHMARK_TEMPLATE(BM, FindMiss_Hot, std::unordered_set, 4, Density::kMin)      //
-    ->Arg(1 << 4)   //
-    ->Arg(1 << 8)   //
-    ->Arg(1 << 12)  //
-    ->Arg(1 << 16)  //
-    ->Arg(1 << 20);
+// Adjust benchmark flag defaults so that the benchmarks run in a reasonable
+// time. The benchmark framework restarts the whole benchmark with number of
+// iterations until it runs for a specific time. This means we build the
+// benchmarking state many times over and this is very costly. To fix this
+// we set a fixed high number iterations that experimentally produce stable
+// results and avoid the repeated creation of the benchmarking state.
+void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
+  b->Arg(1 << 4);
+  b->Arg(1 << 8);
+  b->Arg(1 << 12);
+  b->Arg(1 << 16);
+  b->Arg(1 << 20);
+  b->Iterations(20000000);
+}
 
-
-#if 0
+// clang-format off
 #define BENCHES         \
   (FindHit)             \
   (FindMiss)            \
@@ -860,37 +862,32 @@ BENCHMARK_TEMPLATE(BM, FindMiss_Hot, std::unordered_set, 4, Density::kMin)      
   (InsertManyUnordered) \
   (InsertManyOrdered)   \
   (Iterate)
-#define ENVS (_Hot)(_Cold)
-#define VALUE_SIZES (4)(64)
-#define DENSITIES (Density::kMin)(Density::kMax)
-#define SET_TYPES (__gnu_cxx::hash_set)(std::unordered_set)
 
-#define DEFINE_BENCH_I(bench, env, set, value_size, density)    \
-  BENCHMARK(BM<BOOST_PP_CAT(bench, env), set, value_size, density>) \
-      ->Arg(1 << 4)                                             \
-      ->Arg(1 << 8)                                             \
-      ->Arg(1 << 12)                                            \
-      ->Arg(1 << 16)                                            \
-      ->Arg(1 << 20);
+#define ENVS \
+    (_Hot)   \
+    (_Cold)
+
+#define VALUE_SIZES \
+    (4)             \
+    (64)
+
+#define DENSITIES   \
+    (Density::kMin) \
+    (Density::kMax)
+
+#define SET_TYPES       \
+  (__gnu_cxx::hash_set) \
+  (std::unordered_set)
+// clang-format on
+
+#define DEFINE_BENCH_I(bench, env, set, value_size, density)   \
+  BENCHMARK_TEMPLATE(BM, bench##env, set, value_size, density) \
+      ->Apply(ConfigureBenchmark);
 
 #define DEFINE_BENCH(r, seq) \
   BOOST_PP_EXPAND(DEFINE_BENCH_I BOOST_PP_SEQ_TO_TUPLE(seq))
 
 BOOST_PP_SEQ_FOR_EACH_PRODUCT(
     DEFINE_BENCH, (BENCHES)(ENVS)(SET_TYPES)(VALUE_SIZES)(DENSITIES))
-
-// Adjust benchmark flag defaults so that the benchmarks run in a reasonable
-// time. The benchmark framework restarts the whole benchmark with number of
-// iterations until it runs for a specific time. This means we build the
-// benchmarking state many times over and this is very costly. To fix this
-// we set a fixed high number iterations that experimentally produce stable
-// results and avoid the repeated creation of the benchmarking state.
-// REGISTER_MODULE_INITIALIZER(gtl_map_benchmark, {
-//   SetCommandLineOptionWithMode("benchmark_min_iters", "20000000",
-//                                SET_FLAGS_DEFAULT);
-//   SetCommandLineOptionWithMode("benchmark_max_iters", "20000000",
-//                                SET_FLAGS_DEFAULT);
-// });
-#endif
 
 }  // namespace

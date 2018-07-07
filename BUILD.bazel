@@ -1,9 +1,11 @@
 cc_test(
     name = "hashtable_benchmarks",
     srcs = ["hashtable_benchmarks.cc"],
+    copts = ["-Wno-deprecated"],
     deps = [
         "@google_benchmark//:benchmark_main",
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
+        "@boost//:preprocessor",
     ],
 )
