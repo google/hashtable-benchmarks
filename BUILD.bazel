@@ -1,0 +1,9 @@
+cc_test(
+    name = "hashtable_benchmarks",
+    srcs = ["hashtable_benchmarks.cc"],
+    deps = [
+        "@google_benchmark//:benchmark_main",
+        "@absl//absl/strings",
+        "@absl//absl/strings:str_format",
+    ],
+)
