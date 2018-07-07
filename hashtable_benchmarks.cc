@@ -1,5 +1,16 @@
-// Author: alkis@google.com (Alkis Evlogimenos)
-// Author: romanp@google.com (Roman Perepelitsa)
+// Copyright 2018 Google Inc.  All rights reserved
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <algorithm>
 #include <cmath>
@@ -16,6 +27,15 @@
 #include "absl/strings/str_format.h"
 #include "absl/base/port.h"
 #include "boost/preprocessor.hpp"
+
+// Benchmarks for comparing hash tables.
+//
+// TL;DR:
+//
+//   $ bazel build -c opt :hashtable_benchmarks
+//   $ ./bazel-bin/hashtable_benchmarks --benchmark_format=json
+//
+// This benchmark runs hashtables through a large suite of configurations.
 
 namespace {
 
@@ -245,9 +265,9 @@ void BM(benchmark::State& state) {
   }
   assert(state.iterations() >  0);
   double comp_per_op = 1. * Eq::num_calls / state.iterations();
-  state.SetLabel(absl::StrFormat(
-      "lf=%.2lf cmp=%-6.3lf size=%-7zu num_sets=%-7zu", LoadFactor(s.front()),
-      comp_per_op, s.front().size(), s.size()));
+  state.SetLabel(absl::StrFormat("lf=%.2f cmp=%.3f size=%u num_sets=%u",
+                                 LoadFactor(s.front()), comp_per_op,
+                                 s.front().size(), s.size()));
 }
 
 // Transposes the matrix and concatenates the resulting elements.
