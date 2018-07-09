@@ -19,3 +19,7 @@ bazel build -c opt :hashtable_benchmarks
 ```shell
 Coming Soon.
 ```
+
+# Disclaimer
+
+This is not an officially supported Google product.
