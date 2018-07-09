@@ -12,14 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cc_test(
+cc_library(
+  name = "sparsehash_config",
+  visibility = ["//visibility:public"],
+  hdrs = ["sparseconfig.h"],
+  include_prefix = "sparsehash/internal",
+)
+
+cc_binary(
     name = "hashtable_benchmarks",
-    srcs = ["hashtable_benchmarks.cc"],
+    srcs = [ "hashtable_benchmarks.cc" ],
     copts = ["-Wno-deprecated"],
     deps = [
         "@gbench//:benchmark_main",
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
         "@boost//:preprocessor",
+        "@google_sparsehash//:sparsehash",
     ],
 )

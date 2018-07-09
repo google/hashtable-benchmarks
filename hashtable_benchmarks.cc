@@ -27,6 +27,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/base/port.h"
 #include "boost/preprocessor.hpp"
+#include "google/dense_hash_set"
 
 // Benchmarks for comparing hash tables.
 //
@@ -111,18 +112,16 @@ void Reserve(Container* c, size_t n) {
   return c->reserve(n);
 }
 
-#if 0
 template <class V, class H, class E>
-void Init(dense_hash_set<V, H, E>* s) {
+void Init(google::dense_hash_set<V, H, E>* s) {
   s->set_empty_key(kEmpty);
   s->set_deleted_key(kDeleted);
 }
 
 template <class V, class H, class E>
-void Reserve(dense_hash_set<V, H, E>* s, size_t n) {
+void Reserve(google::dense_hash_set<V, H, E>* s, size_t n) {
   s->resize(n);
 }
-#endif 
 
 template <class V, class H, class E>
 void Reserve(__gnu_cxx::hash_set<V, H, E>* c, size_t n) {}
@@ -893,7 +892,8 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
 
 #define SET_TYPES       \
   (__gnu_cxx::hash_set) \
-  (std::unordered_set)
+  (std::unordered_set)  \
+  (google::dense_hash_set)
 // clang-format on
 
 #define DEFINE_BENCH_I(bench, env, set, value_size, density)   \

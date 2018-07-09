@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-workspace(name = "com_google_hashtable_benchmarks")
+workspace(name = "hashtable_benchmarks")
 
 # abseil
 http_archive(
@@ -29,8 +29,9 @@ http_archive(
 )
 
 # Google dense_hash_set
-http_archive(
+new_http_archive(
     name = "google_sparsehash",
+    build_file = "BUILD.sparsehash",
     strip_prefix = "sparsehash-master",
     urls = ["https://github.com/google/sparsehash/archive/master.zip"],
 )
