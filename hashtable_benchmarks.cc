@@ -587,7 +587,6 @@ struct EraseInsert_Cold {
 // What we really need is to clear the container without releasing memory. For
 // most containers this can be expressed as `set.clear()` but for SwissTable
 // and densehashtable containers this call can release memory.
-// TODO(alkis): fix this once SwissTable has the API.
 struct InsertManyUnordered_Hot {
   template <class Env>
   typename Env::Set operator()(Env* env) const {
@@ -632,7 +631,6 @@ struct InsertManyUnordered_Hot {
 // What we really need is to clear the container without releasing memory. For
 // most containers this can be expressed as `set.clear()` but for SwissTable
 // and densehashtable containers this call can release memory.
-// TODO(alkis): fix this once SwissTable has the API.
 struct InsertManyUnordered_Cold {
   template <class Env>
   std::vector<typename Env::Set> operator()(Env* env) const {
@@ -681,7 +679,6 @@ struct InsertManyUnordered_Cold {
 // What we really need is to clear the container without releasing memory. For
 // most containers this can be expressed as `set.clear()` but for SwissTable
 // and densehashtable containers this call can release memory.
-// TODO(alkis): fix this once SwissTable has the API.
 struct InsertManyOrdered_Hot {
   template <class Env>
   std::vector<typename Env::Set> operator()(Env* env) const {
@@ -728,7 +725,6 @@ struct InsertManyOrdered_Hot {
 // What we really need is to clear the container without releasing memory. For
 // most containers this can be expressed as `set.clear()` but for SwissTable
 // and densehashtable containers this call can release memory.
-// TODO(alkis): fix this once SwissTable has the API.
 struct InsertManyOrdered_Cold {
   template <class Env>
   std::vector<typename Env::Set> operator()(Env* env) const {
