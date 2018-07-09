@@ -13,21 +13,21 @@
 # limitations under the License.
 
 cc_library(
-  name = "sparsehash_config",
-  visibility = ["//visibility:public"],
-  hdrs = ["sparseconfig.h"],
-  include_prefix = "sparsehash/internal",
+    name = "sparsehash_config",
+    hdrs = ["sparseconfig.h"],
+    include_prefix = "sparsehash/internal",
+    visibility = ["//visibility:public"],
 )
 
 cc_binary(
     name = "hashtable_benchmarks",
-    srcs = [ "hashtable_benchmarks.cc" ],
+    srcs = ["hashtable_benchmarks.cc"],
     copts = ["-Wno-deprecated"],
     deps = [
-        "@gbench//:benchmark_main",
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
         "@boost//:preprocessor",
+        "@gbench//:benchmark_main",
         "@google_sparsehash//:sparsehash",
     ],
 )
