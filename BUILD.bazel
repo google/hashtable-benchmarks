@@ -17,7 +17,7 @@ cc_test(
     srcs = ["hashtable_benchmarks.cc"],
     copts = ["-Wno-deprecated"],
     deps = [
-        "@google_benchmark//:benchmark_main",
+        "@gbench//:benchmark_main",
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
         "@boost//:preprocessor",

@@ -15,30 +15,30 @@
 workspace(name = "com_google_hashtable_benchmarks")
 
 # abseil
-git_repository(
+http_archive(
     name = "absl",
-    commit = "8f612ebb152fb7e05643a2bcf78cb89a8c0641ad",
-    remote = "https://github.com/abseil/abseil-cpp",
+    strip_prefix = "abseil-cpp-master",
+    urls = ["https://github.com/abseil/abseil-cpp/archive/master.zip"],
 )
 
 # Google benchmark.
-git_repository(
-    name = "google_benchmark",
-    commit = "16703ff83c1ae6d53e5155df3bb3ab0bc96083be",
-    remote = "https://github.com/google/benchmark",
+http_archive(
+    name = "gbench",
+    strip_prefix = "benchmark-master",
+    urls = ["https://github.com/google/benchmark/archive/master.zip"],
 )
 
 # Google dense_hash_set
-git_repository(
+http_archive(
     name = "google_sparsehash",
-    commit = "4cb924025b8c622d1a1e11f4c1e9db15410c75fb",
-    remote = "https://github.com/google/sparsehash",
+    strip_prefix = "sparsehash-master",
+    urls = ["https://github.com/google/sparsehash/archive/master.zip"],
 )
 
-git_repository(
+http_archive(
     name = "com_github_nelhage_rules_boost",
-    commit = "239ce40e42ab0e3fe7ce84c2e9303ff8a277c41a",
-    remote = "https://github.com/nelhage/rules_boost",
+    strip_prefix = "rules_boost-master",
+    urls = ["https://github.com/nelhage/rules_boost/archive/master.zip"],
 )
 
 load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
