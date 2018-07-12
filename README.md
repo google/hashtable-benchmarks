@@ -16,9 +16,14 @@ bazel build -c opt :hashtable_benchmarks
 
 3. Analyze:
 
-```shell
-Coming Soon.
-```
+You can use http://colab.research.google.com along with `hashtable_benchmarks.ipynb` to parse the generated `benchmark-results.json`.
+
+4. Contribute:
+
+We would like this to turn into *the* place for comparing hashtables in C++.  We
+will accept external dependencies on other hashtable libraries (assuming they
+have a compatible lisence).  We encourage folks to improve and modify both the
+analysis and the benchmarks themselves as we learn things.
 
 # Disclaimer
 
