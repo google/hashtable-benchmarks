@@ -1,0 +1,11 @@
+cc_library(
+    name = "folly",
+    includes = [""],
+    srcs = ["folly/container/detail/F14Table.cpp"],
+    hdrs = glob([
+        "folly/**/*.h",
+    ]),
+    defines = ["FOLLY_NO_CONFIG"],
+    visibility = ["//visibility:public"],
+    deps = [],
+)

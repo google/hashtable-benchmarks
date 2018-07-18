@@ -28,6 +28,7 @@
 #include "absl/base/port.h"
 #include "boost/preprocessor.hpp"
 #include "google/dense_hash_set"
+#include "folly/container/F14Set.h"
 
 // Benchmarks for comparing hash tables.
 //
@@ -890,9 +891,10 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
     (Density::kMin) \
     (Density::kMax)
 
-#define SET_TYPES       \
-  (__gnu_cxx::hash_set) \
-  (std::unordered_set)  \
+#define SET_TYPES          \
+  (__gnu_cxx::hash_set)    \
+  (std::unordered_set)     \
+  (folly::F14ValueSet)     \
   (google::dense_hash_set)
 // clang-format on
 
@@ -905,5 +907,6 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
 
 BOOST_PP_SEQ_FOR_EACH_PRODUCT(
     DEFINE_BENCH, (BENCHES)(ENVS)(SET_TYPES)(VALUE_SIZES)(DENSITIES))
+
 
 }  // namespace

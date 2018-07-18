@@ -27,6 +27,7 @@ cc_binary(
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
         "@boost//:preprocessor",
+        "@facebook_folly//:folly",
         "@gbench//:benchmark_main",
         "@google_sparsehash//:sparsehash",
     ],

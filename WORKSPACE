@@ -36,6 +36,14 @@ new_http_archive(
     urls = ["https://github.com/google/sparsehash/archive/master.zip"],
 )
 
+# Facebook folly
+new_http_archive(
+    name = "facebook_folly",
+    build_file = "BUILD.folly",
+    strip_prefix = "folly-master",
+    urls = ["https://github.com/facebook/folly/archive/master.zip"],
+)
+
 http_archive(
     name = "com_github_nelhage_rules_boost",
     strip_prefix = "rules_boost-master",
