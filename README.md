@@ -5,8 +5,10 @@ Benchmarks for comparing hashtable implementations.
 1. Build:
 
 ```shell
-bazel build -c opt :hashtable_benchmarks
+bazel build :hashtable_benchmarks
 ```
+
+Note that `-c opt` is the default.
 
 2. Run:
 
