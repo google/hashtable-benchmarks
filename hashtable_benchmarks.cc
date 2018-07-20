@@ -74,11 +74,15 @@ class alignas(kSize < 8 ? 4 : 8) Value : private Ballast<kSize - 4> {
   uint32_t value_;
 };
 
-// Use a zero cost hash function. The purpose of this benchmark is to focus on
+// Use a ~zero cost hash function. The purpose of this benchmark is to focus on
 // the implementations of the containers, not the quality or speed of their hash
-// functions.
+// functions.  Bit mixing is disabled for folly::F14*.
 struct Hash {
-  size_t operator()(size_t x) const { return x; }
+  using folly_is_avalanching = std::true_type;
+
+  size_t operator()(uint32_t x) const {
+    return (size_t{x} << 32) | x;
+  }
 };
 
 struct Eq {
