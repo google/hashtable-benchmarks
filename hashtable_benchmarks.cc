@@ -899,6 +899,8 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
   (__gnu_cxx::hash_set)    \
   (std::unordered_set)     \
   (folly::F14ValueSet)     \
+  (folly::F14NodeSet)      \
+  (folly::F14VectorSet)    \
   (google::dense_hash_set)
 // clang-format on
 
