@@ -46,6 +46,12 @@ http_archive(
     strip_prefix = "glog-master",
     urls = ["https://github.com/google/glog/archive/master.zip"],
 )
+new_http_archive(
+    name = "com_github_google_double_conversion",
+    build_file = "BUILD.double_conversion",
+    strip_prefix = "double-conversion-master",
+    urls = ["https://github.com/google/double-conversion/archive/master.zip"],
+)
 
 # Facebook folly
 new_http_archive(
