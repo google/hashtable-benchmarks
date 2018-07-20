@@ -36,6 +36,17 @@ new_http_archive(
     urls = ["https://github.com/google/sparsehash/archive/master.zip"],
 )
 
+http_archive(
+    name = "com_github_gflags_gflags",
+    strip_prefix = "gflags-master",
+    urls = ["https://github.com/gflags/gflags/archive/master.zip"],
+)
+http_archive(
+    name = "com_github_google_glog",
+    strip_prefix = "glog-master",
+    urls = ["https://github.com/google/glog/archive/master.zip"],
+)
+
 # Facebook folly
 new_http_archive(
     name = "facebook_folly",

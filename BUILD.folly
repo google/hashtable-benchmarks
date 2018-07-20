@@ -1,11 +1,21 @@
 cc_library(
     name = "folly",
     includes = [""],
-    srcs = ["folly/container/detail/F14Table.cpp"],
+    srcs = [
+        "folly/FileUtil.cpp",
+        "folly/container/detail/F14Table.cpp",
+        "folly/lang/Assume.cpp",
+        "folly/lang/SafeAssert.cpp",
+    ],
     hdrs = glob([
         "folly/**/*.h",
     ]),
-    defines = ["FOLLY_NO_CONFIG"],
+    defines = [
+        "FOLLY_NO_CONFIG",
+        "FOLLY_HAVE_MEMRCHR",
+    ],
     visibility = ["//visibility:public"],
-    deps = [],
+    deps = [
+        "@com_github_google_glog//:glog",
+    ],
 )
