@@ -19,11 +19,18 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "build_info",
+    hdrs = ["build_info.h"],
+    linkstamp = "build_info.cc",
+)
+
 cc_binary(
     name = "hashtable_benchmarks",
     srcs = ["hashtable_benchmarks.cc"],
     copts = ["-Wno-deprecated"],
     deps = [
+        ":build_info",
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
         "@boost//:preprocessor",
@@ -31,4 +38,5 @@ cc_binary(
         "@gbench//:benchmark_main",
         "@google_sparsehash//:sparsehash",
     ],
+    stamp = True,
 )

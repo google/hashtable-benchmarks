@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "build_info.h"
 #include "benchmark/benchmark.h"
 #include "absl/strings/str_format.h"
 #include "absl/base/port.h"
@@ -124,7 +125,7 @@ size_t Eq::num_calls;
 constexpr uint32_t kEmpty = 1U << 31;
 constexpr uint32_t kDeleted = 3U << 30;
 
-uint32_t RandomNonSpecial() { 
+uint32_t RandomNonSpecial() {
   std::uniform_int_distribution<uint32_t> dis(0, (1U << 31) - 1);
   return dis(GetRNG());
 }
@@ -964,5 +965,16 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
 BOOST_PP_SEQ_FOR_EACH_PRODUCT(
     DEFINE_BENCH, (BENCHES)(ENVS)(SET_TYPES)(VALUE_SIZES)(DENSITIES))
 
-
 }  // namespace
+
+int main(int argc, char **argv) {
+  auto prog = std::string(argv[0]) + "@" + getBuildScmRevision();
+  argv[0] = const_cast<char*>(prog.c_str());
+
+  benchmark::Initialize(&argc, argv);
+  if (benchmark::ReportUnrecognizedArguments(argc, argv)) {
+    return 1;
+  }
+  benchmark::RunSpecifiedBenchmarks();
+  return 0;
+}
