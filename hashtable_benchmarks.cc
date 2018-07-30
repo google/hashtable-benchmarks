@@ -80,7 +80,7 @@ class alignas(kSize < 8 ? 4 : 8) Value : private Ballast<kSize - 4> {
 struct Hash {
   using folly_is_avalanching = std::true_type;
 
-  size_t operator()(uint32_t x) const {
+  size_t operator()(uint32_t x) const noexcept {
     return (size_t{x} << 32) | x;
   }
 };
