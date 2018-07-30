@@ -132,9 +132,24 @@ template <class V, class H, class E>
 void Reserve(__gnu_cxx::hash_set<V, H, E>* c, size_t n) {}
 
 template <class Container>
+double MaxLoadFactor(const Container& c) {
+  return c.max_load_factor();
+}
+
+template <class V, class H, class E>
+double MaxLoadFactor(const __gnu_cxx::hash_set<V, H, E>& c) {
+  return 1.;
+}
+
+template <class Container>
 double LoadFactor(const Container& c) {
   // Do not use load_factor() because hash_map does not provide such function.
   return 1. * c.size() / c.bucket_count();
+}
+
+template <class Container>
+double RelativeLoadFactor(const Container& c) {
+  return LoadFactor(c) / MaxLoadFactor(c);
 }
 
 enum class Density {
@@ -263,9 +278,9 @@ void BM(benchmark::State& state) {
     (void)set; // silence warning in opt
   }
   if (kDensityT == Density::kMin) {
-    assert(LoadFactor(s.front()) < 0.6);
+    assert(RelativeLoadFactor(s.front()) < 0.6);
   } else {
-    assert(LoadFactor(s.front()) > 0.6);
+    assert(RelativeLoadFactor(s.front()) > 0.6);
   }
   assert(state.iterations() >  0);
   double comp_per_op = 1. * Eq::num_calls / state.iterations();
