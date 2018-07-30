@@ -41,7 +41,24 @@
 
 namespace {
 
+#if !defined(__clang__) && __GNUC__ == 5
+// gcc 5.5 miscompiles LookupHit_Hot's DoNotOptimize(set), resulting in
+// an immediate segfault in opt mode.  This fallback implementation only
+// handles integral non-const lvalue types, but is sufficient for the
+// hash table benchmarks.  gcc 7 is okay.
+template <typename T>
+std::enable_if_t<std::is_integral<T>::value || std::is_pointer<T>::value>
+DoNotOptimize(T &val) {
+  asm volatile("" : "+r"(val) : : "memory");
+}
+
+template <typename T>
+void DoNotOptimize(T const& val) {
+  asm volatile("" : : "r,m"(val) : "memory");
+}
+#else
 using ::benchmark::DoNotOptimize;
+#endif
 
 std::mt19937 MakeRNG() {
   std::random_device rd;
