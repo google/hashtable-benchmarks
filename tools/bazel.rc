@@ -1,1 +1,6 @@
-build --copt=--std=c++14 -c opt
+build --copt=--std=c++14
+
+build --copt=-march=corei7 --copt=-mtune=core-avx2
+
+build --workspace_status_command=tools/workspace_status.sh
+build -c opt

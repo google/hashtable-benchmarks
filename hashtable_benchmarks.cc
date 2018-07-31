@@ -23,12 +23,21 @@
 #include <unordered_set>
 #include <utility>
 
+#include "build_info.h"
 #include "benchmark/benchmark.h"
 #include "absl/strings/str_format.h"
 #include "absl/base/port.h"
 #include "boost/preprocessor.hpp"
 #include "google/dense_hash_set"
 #include "folly/container/F14Set.h"
+
+#if defined(__GNUC__) || defined(__clang__)
+#define HT_BENCH_FLATTEN __attribute__((__flatten__))
+#define HT_BENCH_NOINLINE __attribute__((__noinline__))
+#else
+#define HT_BENCH_FLATTEN
+#define HT_BENCH_NOINLINE
+#endif
 
 // Benchmarks for comparing hash tables.
 //
@@ -41,7 +50,24 @@
 
 namespace {
 
+#if !defined(__clang__) && __GNUC__ == 5
+// gcc 5.5 miscompiles LookupHit_Hot's DoNotOptimize(set), resulting in
+// an immediate segfault in opt mode.  This fallback implementation only
+// handles integral non-const lvalue types, but is sufficient for the
+// hash table benchmarks.  gcc 7 is okay.
+template <typename T>
+std::enable_if_t<std::is_integral<T>::value || std::is_pointer<T>::value>
+DoNotOptimize(T &val) {
+  asm volatile("" : "+r"(val) : : "memory");
+}
+
+template <typename T>
+void DoNotOptimize(T const& val) {
+  asm volatile("" : : "r,m"(val) : "memory");
+}
+#else
 using ::benchmark::DoNotOptimize;
+#endif
 
 std::mt19937 MakeRNG() {
   std::random_device rd;
@@ -74,11 +100,15 @@ class alignas(kSize < 8 ? 4 : 8) Value : private Ballast<kSize - 4> {
   uint32_t value_;
 };
 
-// Use a zero cost hash function. The purpose of this benchmark is to focus on
+// Use a ~zero cost hash function. The purpose of this benchmark is to focus on
 // the implementations of the containers, not the quality or speed of their hash
-// functions.
+// functions.  Bit mixing is disabled for folly::F14*.
 struct Hash {
-  size_t operator()(size_t x) const { return x; }
+  using folly_is_avalanching = std::true_type;
+
+  size_t operator()(uint32_t x) const noexcept {
+    return (size_t{x} << 32) | x;
+  }
 };
 
 struct Eq {
@@ -95,7 +125,7 @@ size_t Eq::num_calls;
 constexpr uint32_t kEmpty = 1U << 31;
 constexpr uint32_t kDeleted = 3U << 30;
 
-uint32_t RandomNonSpecial() { 
+uint32_t RandomNonSpecial() {
   std::uniform_int_distribution<uint32_t> dis(0, (1U << 31) - 1);
   return dis(GetRNG());
 }
@@ -128,9 +158,24 @@ template <class V, class H, class E>
 void Reserve(__gnu_cxx::hash_set<V, H, E>* c, size_t n) {}
 
 template <class Container>
+double MaxLoadFactor(const Container& c) {
+  return c.max_load_factor();
+}
+
+template <class V, class H, class E>
+double MaxLoadFactor(const __gnu_cxx::hash_set<V, H, E>& c) {
+  return 1.;
+}
+
+template <class Container>
 double LoadFactor(const Container& c) {
   // Do not use load_factor() because hash_map does not provide such function.
   return 1. * c.size() / c.bucket_count();
+}
+
+template <class Container>
+double RelativeLoadFactor(const Container& c) {
+  return LoadFactor(c) / MaxLoadFactor(c);
 }
 
 enum class Density {
@@ -176,8 +221,9 @@ Set GenerateSet(size_t min_size, Density density) {
 // Generates several random sets with GenerateSet<Set>(min_size, density). The
 // sum of the set sizes is at least min_total_size.
 template <class Set>
-std::vector<Set> GenerateSets(size_t min_size, size_t min_total_size,
-                              Density density) {
+HT_BENCH_NOINLINE std::vector<Set> GenerateSets(size_t min_size,
+                                                size_t min_total_size,
+                                                Density density) {
   GetRNG() = MakeRNG();
   size_t total_size = 0;
   std::vector<Set> res;
@@ -259,9 +305,9 @@ void BM(benchmark::State& state) {
     (void)set; // silence warning in opt
   }
   if (kDensityT == Density::kMin) {
-    assert(LoadFactor(s.front()) < 0.6);
+    assert(RelativeLoadFactor(s.front()) < 0.6);
   } else {
-    assert(LoadFactor(s.front()) > 0.6);
+    assert(RelativeLoadFactor(s.front()) > 0.6);
   }
   assert(state.iterations() >  0);
   double comp_per_op = 1. * Eq::num_calls / state.iterations();
@@ -286,7 +332,8 @@ std::vector<T> Transpose(std::vector<std::vector<T>> m) {
 
 // Helper function used to implement two similar benchmarks defined below.
 template <class Env, class Lookup>
-std::vector<typename Env::Set> LookupHit_Hot(Env* env, Lookup lookup) {
+HT_BENCH_FLATTEN std::vector<typename Env::Set> LookupHit_Hot(Env* env,
+                                                              Lookup lookup) {
   using Set = typename Env::Set;
   static constexpr size_t kMinTotalKeyCount = 64 << 10;
   static constexpr size_t kOpsPerKey = 512;
@@ -322,7 +369,8 @@ std::vector<typename Env::Set> LookupHit_Hot(Env* env, Lookup lookup) {
 
 // Helper function used to implement two similar benchmarks defined below.
 template <class Env, class Lookup>
-std::vector<typename Env::Set> LookupHit_Cold(Env* env, Lookup lookup) {
+HT_BENCH_FLATTEN std::vector<typename Env::Set> LookupHit_Cold(Env* env,
+                                                               Lookup lookup) {
   using Set = typename Env::Set;
   // The larger this value, the colder the benchmark and the longer it takes to
   // run.
@@ -338,10 +386,12 @@ std::vector<typename Env::Set> LookupHit_Cold(Env* env, Lookup lookup) {
   }
   std::vector<uint32_t> keys = Transpose(std::move(m));
 
+  const size_t num_sets = s.front().size();
+  const size_t set_size = s.size();
   while (env->KeepRunningBatch(keys.size())) {
-    for (size_t i = 0; i != s.front().size(); ++i) {
-      for (size_t j = 0; j != s.size(); ++j) {
-        lookup(&s[j], keys[i * s.size() + j]);
+    for (size_t i = 0; i != num_sets; ++i) {
+      for (size_t j = 0; j != set_size; ++j) {
+        lookup(&s[j], keys[i * set_size + j]);
       }
     }
   }
@@ -414,7 +464,7 @@ struct InsertHit_Cold {
 //   assert(set.find(key) == set.end());
 struct FindMiss_Hot {
   template <class Env>
-  std::vector<typename Env::Set> operator()(Env* env) const {
+  HT_BENCH_FLATTEN std::vector<typename Env::Set> operator()(Env* env) const {
     using Set = typename Env::Set;
     // The larger this value, the less the results will depend on randomness and
     // the longer the benchmark will run.
@@ -449,7 +499,7 @@ struct FindMiss_Hot {
 //   assert(set.find(key) == set.end());
 struct FindMiss_Cold {
   template <class Env>
-  std::vector<typename Env::Set> operator()(Env* env) const {
+  HT_BENCH_FLATTEN std::vector<typename Env::Set> operator()(Env* env) const {
     using Set = typename Env::Set;
     // The larger this value, the colder the benchmark and the longer it takes
     // to run.
@@ -481,7 +531,7 @@ struct FindMiss_Cold {
 //   assert(set.insert(key2).second);
 struct EraseInsert_Hot {
   template <class Env>
-  typename Env::Set operator()(Env* env) const {
+  HT_BENCH_FLATTEN typename Env::Set operator()(Env* env) const {
     using Set = typename Env::Set;
     // The larger this value, the less the results will depend on randomness and
     // the longer the benchmark will run.
@@ -492,7 +542,6 @@ struct EraseInsert_Hot {
     if (Env::kDensity != Density::kMin) return Set();
 
     Set s = GenerateSet<Set>(env->Size(), Env::kDensity);
-    const size_t size = s.size();
     std::vector<uint32_t> keys = ToVector(s);
     std::shuffle(keys.begin(), keys.end(), GetRNG());
     std::unordered_set<uint32_t> extra;
@@ -501,15 +550,17 @@ struct EraseInsert_Hot {
       if (!s.count(key) && extra.insert(key).second) keys.push_back(key);
     }
 
-    while (env->KeepRunningBatch(keys.size())) {
-      for (size_t i = 0; i != keys.size() - size; ++i) {
+    const size_t set_size = s.size();
+    const size_t num_keys = keys.size();
+    while (env->KeepRunningBatch(num_keys)) {
+      for (size_t i = 0; i != num_keys - set_size; ++i) {
         DoNotOptimize(s);
         DoNotOptimize(s.erase(keys[i]));
-        DoNotOptimize(s.insert(keys[i + size]));
+        DoNotOptimize(s.insert(keys[i + set_size]));
       }
-      for (size_t i = 0; i != size; ++i) {
+      for (size_t i = 0; i != set_size; ++i) {
         DoNotOptimize(s);
-        DoNotOptimize(s.erase(keys[keys.size() - size + i]));
+        DoNotOptimize(s.erase(keys[num_keys - set_size + i]));
         DoNotOptimize(s.insert(keys[i]));
       }
     }
@@ -525,7 +576,7 @@ struct EraseInsert_Hot {
 //   assert(set.insert(key2).second);
 struct EraseInsert_Cold {
   template <class Env>
-  std::vector<typename Env::Set> operator()(Env* env) const {
+  HT_BENCH_FLATTEN std::vector<typename Env::Set> operator()(Env* env) const {
     using Set = typename Env::Set;
     // The larger this value, the colder the benchmark and the longer it takes
     // to run.
@@ -554,18 +605,19 @@ struct EraseInsert_Cold {
 
     std::vector<uint32_t> keys = Transpose(std::move(m));
 
+    const size_t num_sets = s.size();
     while (env->KeepRunningBatch(keys.size())) {
       for (size_t i = 0; i != set_keys - set_size; ++i) {
-        for (size_t j = 0; j != s.size(); ++j) {
-          DoNotOptimize(s[j].erase(keys[i * s.size() + j]));
-          DoNotOptimize(s[j].insert(keys[(i + set_size) * s.size() + j]));
+        for (size_t j = 0; j != num_sets; ++j) {
+          DoNotOptimize(s[j].erase(keys[i * num_sets + j]));
+          DoNotOptimize(s[j].insert(keys[(i + set_size) * num_sets + j]));
         }
       }
       for (size_t i = 0; i != set_size; ++i) {
-        for (size_t j = 0; j != s.size(); ++j) {
+        for (size_t j = 0; j != num_sets; ++j) {
           DoNotOptimize(
-              s[j].erase(keys[(set_keys - set_size + i) * s.size() + j]));
-          DoNotOptimize(s[j].insert(keys[i * s.size() + j]));
+              s[j].erase(keys[(set_keys - set_size + i) * num_sets + j]));
+          DoNotOptimize(s[j].insert(keys[i * num_sets + j]));
         }
       }
     }
@@ -589,7 +641,7 @@ struct EraseInsert_Cold {
 // and densehashtable containers this call can release memory.
 struct InsertManyUnordered_Hot {
   template <class Env>
-  typename Env::Set operator()(Env* env) const {
+  HT_BENCH_FLATTEN typename Env::Set operator()(Env* env) const {
     using Set = typename Env::Set;
     // The higher the value, the less contribution std::shuffle makes. The price
     // is longer benchmarking time. With 64 std::shuffle adds around 0.3 ns to
@@ -633,7 +685,7 @@ struct InsertManyUnordered_Hot {
 // and densehashtable containers this call can release memory.
 struct InsertManyUnordered_Cold {
   template <class Env>
-  std::vector<typename Env::Set> operator()(Env* env) const {
+  HT_BENCH_FLATTEN std::vector<typename Env::Set> operator()(Env* env) const {
     using Set = typename Env::Set;
     // The larger this value, the colder the benchmark and the longer it takes
     // to run.
@@ -649,15 +701,16 @@ struct InsertManyUnordered_Cold {
     }
 
     std::vector<uint32_t> keys = Transpose(std::move(m));
-    size_t set_size = s.front().size();
+    const size_t set_size = s.front().size();
+    const size_t num_sets = s.size();
     while (env->KeepRunningBatch(keys.size())) {
       for (Set& set : s) {
         set.clear();
         Reserve(&set, set_size);
       }
       for (size_t i = 0; i != set_size; ++i) {
-        for (size_t j = 0; j != s.size(); ++j) {
-          DoNotOptimize(s[j].insert(keys[i * s.size() + j]));
+        for (size_t j = 0; j != num_sets; ++j) {
+          DoNotOptimize(s[j].insert(keys[i * num_sets + j]));
         }
       }
     }
@@ -677,11 +730,11 @@ struct InsertManyUnordered_Cold {
 //   set.insert(keyN);
 //
 // What we really need is to clear the container without releasing memory. For
-// most containers this can be expressed as `set.clear()` but for SwissTable
-// and densehashtable containers this call can release memory.
+// most containers this can be expressed as `set.clear()` but for SwissTable,
+// densehashtable, and F14 containers this call can release memory.
 struct InsertManyOrdered_Hot {
   template <class Env>
-  std::vector<typename Env::Set> operator()(Env* env) const {
+  HT_BENCH_FLATTEN std::vector<typename Env::Set> operator()(Env* env) const {
     using Set = typename Env::Set;
     // The higher the value, the less contribution std::shuffle makes. The price
     // is longer benchmarking time. With 64 std::shuffle adds around 0.3 ns to
@@ -727,7 +780,7 @@ struct InsertManyOrdered_Hot {
 // and densehashtable containers this call can release memory.
 struct InsertManyOrdered_Cold {
   template <class Env>
-  std::vector<typename Env::Set> operator()(Env* env) const {
+  HT_BENCH_FLATTEN std::vector<typename Env::Set> operator()(Env* env) const {
     using Set = typename Env::Set;
     // The larger this value, the colder the benchmark and the longer it takes
     // to run.
@@ -742,15 +795,16 @@ struct InsertManyOrdered_Cold {
     }
 
     std::vector<uint32_t> keys = Transpose(std::move(m));
-    size_t set_size = s.front().size();
+    const size_t set_size = s.front().size();
+    const size_t num_sets = s.size();
     while (env->KeepRunningBatch(keys.size())) {
       for (Set& set : s) {
         set.clear();
         Reserve(&set, set_size);
       }
       for (size_t i = 0; i != set_size; ++i) {
-        for (size_t j = 0; j != s.size(); ++j) {
-          DoNotOptimize(s[j].insert(keys[i * s.size() + j]));
+        for (size_t j = 0; j != num_sets; ++j) {
+          DoNotOptimize(s[j].insert(keys[i * num_sets + j]));
         }
       }
     }
@@ -768,7 +822,7 @@ struct InsertManyOrdered_Cold {
 //   }
 struct Iterate_Hot {
   template <class Env>
-  std::vector<typename Env::Set> operator()(Env* env) const {
+  HT_BENCH_FLATTEN std::vector<typename Env::Set> operator()(Env* env) const {
     using Set = typename Env::Set;
     // The larger this value, the hotter the benchmark and the longer it will
     // run.
@@ -805,7 +859,7 @@ struct Iterate_Hot {
 //   }
 struct Iterate_Cold {
   template <class Env>
-  std::vector<typename Env::Set> operator()(Env* env) const {
+  HT_BENCH_FLATTEN std::vector<typename Env::Set> operator()(Env* env) const {
     using Set = typename Env::Set;
     // The larger this value, the colder the benchmark and the longer it takes
     // to run.
@@ -834,11 +888,12 @@ struct Iterate_Cold {
     std::vector<typename Set::const_iterator> begins = Transpose(std::move(m));
     std::vector<typename Set::const_iterator> iters = begins;
     alignas(Value<Env::kValueSize>) char data[Env::kValueSize];
+    const size_t num_sets = s.size();
     while (env->KeepRunningBatch(iters.size() * kStride)) {
       for (size_t i = 0; i != kStride; ++i) {
         for (size_t j = 0; j != num_strides; ++j) {
-          for (size_t k = 0; k != s.size(); ++k) {
-            auto& iter = iters[j * s.size() + k];
+          for (size_t k = 0; k != num_sets; ++k) {
+            auto& iter = iters[j * num_sets + k];
             DoNotOptimize(iter == s[k].end());
             memcpy(data, &*iter, Env::kValueSize);
             DoNotOptimize(data);
@@ -895,6 +950,8 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
   (__gnu_cxx::hash_set)    \
   (std::unordered_set)     \
   (folly::F14ValueSet)     \
+  (folly::F14NodeSet)      \
+  (folly::F14VectorSet)    \
   (google::dense_hash_set)
 // clang-format on
 
@@ -908,5 +965,16 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
 BOOST_PP_SEQ_FOR_EACH_PRODUCT(
     DEFINE_BENCH, (BENCHES)(ENVS)(SET_TYPES)(VALUE_SIZES)(DENSITIES))
 
-
 }  // namespace
+
+int main(int argc, char **argv) {
+  auto prog = std::string(argv[0]) + "@" + getBuildScmRevision();
+  argv[0] = const_cast<char*>(prog.c_str());
+
+  benchmark::Initialize(&argc, argv);
+  if (benchmark::ReportUnrecognizedArguments(argc, argv)) {
+    return 1;
+  }
+  benchmark::RunSpecifiedBenchmarks();
+  return 0;
+}
