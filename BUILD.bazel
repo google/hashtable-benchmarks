@@ -33,6 +33,8 @@ cc_binary(
         ":build_info",
         "@absl//absl/strings",
         "@absl//absl/strings:str_format",
+        "@absl//absl/container:flat_hash_set",
+        "@absl//absl/container:node_hash_set",
         "@boost//:preprocessor",
         "@facebook_folly//:folly",
         "@gbench//:benchmark_main",

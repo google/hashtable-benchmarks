@@ -27,6 +27,8 @@
 #include "benchmark/benchmark.h"
 #include "absl/strings/str_format.h"
 #include "absl/base/port.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/container/node_hash_set.h"
 #include "boost/preprocessor.hpp"
 #include "google/dense_hash_set"
 #include "folly/container/F14Set.h"
@@ -949,6 +951,8 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
 #define SET_TYPES          \
   (__gnu_cxx::hash_set)    \
   (std::unordered_set)     \
+  (absl::flat_hash_set)    \
+  (absl::node_hash_set)    \
   (folly::F14ValueSet)     \
   (folly::F14NodeSet)      \
   (folly::F14VectorSet)    \
