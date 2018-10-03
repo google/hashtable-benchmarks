@@ -102,14 +102,22 @@ class alignas(kSize < 8 ? 4 : 8) Value : private Ballast<kSize - 4> {
   uint32_t value_;
 };
 
-// Use a ~zero cost hash function. The purpose of this benchmark is to focus on
-// the implementations of the containers, not the quality or speed of their hash
-// functions.  Bit mixing is disabled for folly::F14*.
+// Use a ~zero cost hash function. The purpose of this benchmark is to
+// focus on the implementations of the containers, not the quality or
+// speed of their hash functions.  Since we're bypassing the default hasher
+// for SwissTable and disabling the bit mixer that is normally applied to
+// untrusted hash functors by F14, we need to ensure that bits 30 and 31
+// of the key (which are always 0 and 1 respectively for keys inserted
+// to the hash table) don't end up causing collisions or affecting the
+// vector filtering step.  SwissTable uses bits 0..6 for filtering; F14
+// uses bits 56..62.  This hasher puts entropy in all bits of the hash
+// result except 30..33 (inclusive), which is enough to avoid collisions
+// for capacity 2^23 for SwissTable and 2^30 for F14.
 struct Hash {
   using folly_is_avalanching = std::true_type;
 
   size_t operator()(uint32_t x) const noexcept {
-    return (size_t{x} << 32) | x;
+    return (size_t{x} << 34) | x;
   }
 };
 
@@ -132,8 +140,7 @@ uint32_t RandomNonSpecial() {
   return dis(GetRNG());
 }
 
-// The value isn't special and the second highest order bit is unset <=>
-// the value never exists in the set.
+// See Hash
 uint32_t RandomExistent() { return RandomNonSpecial() | (1U << 30); }
 uint32_t RandomNonexistent() { return RandomNonSpecial() & ~(1U << 30); }
 
@@ -942,6 +949,9 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
 
 #define VALUE_SIZES \
     (4)             \
+    (8)             \
+    (16)            \
+    (32)            \
     (64)
 
 #define DENSITIES   \
@@ -951,12 +961,12 @@ void ConfigureBenchmark(benchmark::internal::Benchmark* b) {
 #define SET_TYPES          \
   (__gnu_cxx::hash_set)    \
   (std::unordered_set)     \
+  (google::dense_hash_set) \
   (absl::flat_hash_set)    \
   (absl::node_hash_set)    \
   (folly::F14ValueSet)     \
   (folly::F14NodeSet)      \
-  (folly::F14VectorSet)    \
-  (google::dense_hash_set)
+  (folly::F14VectorSet)
 // clang-format on
 
 #define DEFINE_BENCH_I(bench, env, set, value_size, density)   \
