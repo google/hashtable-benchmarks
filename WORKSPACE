@@ -14,6 +14,8 @@
 
 workspace(name = "hashtable_benchmarks")
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 # abseil
 http_archive(
     name = "absl",
@@ -29,9 +31,9 @@ http_archive(
 )
 
 # Google dense_hash_set
-new_http_archive(
+http_archive(
     name = "google_sparsehash",
-    build_file = "BUILD.sparsehash",
+    build_file = "//:BUILD.sparsehash",
     strip_prefix = "sparsehash-master",
     urls = ["https://github.com/google/sparsehash/archive/master.zip"],
 )
@@ -46,19 +48,27 @@ http_archive(
     strip_prefix = "glog-master",
     urls = ["https://github.com/google/glog/archive/master.zip"],
 )
-new_http_archive(
+http_archive(
     name = "com_github_google_double_conversion",
-    build_file = "BUILD.double_conversion",
+    build_file = "//:BUILD.double_conversion",
     strip_prefix = "double-conversion-master",
     urls = ["https://github.com/google/double-conversion/archive/master.zip"],
 )
 
 # Facebook folly
-new_http_archive(
+http_archive(
     name = "facebook_folly",
-    build_file = "BUILD.folly",
+    build_file = "//:BUILD.folly",
     strip_prefix = "folly-master",
     urls = ["https://github.com/facebook/folly/archive/master.zip"],
+)
+
+# ska::flat_hash_set and ska::bytell_hash_set
+http_archive(
+    name = "skarupke",
+    build_file = "//:BUILD.skarupke",
+    strip_prefix = "flat_hash_map-master",
+    urls = ["https://github.com/skarupke/flat_hash_map/archive/master.zip"],
 )
 
 http_archive(

@@ -39,6 +39,15 @@ cc_binary(
         "@facebook_folly//:folly",
         "@gbench//:benchmark_main",
         "@google_sparsehash//:sparsehash",
+        "@skarupke//:skarupke",
     ],
     stamp = True,
+)
+
+cc_binary(
+    name = "dynamic_rehash_effect",
+    srcs = ["dynamic_rehash_effect.cc"],
+    deps = [
+        "@skarupke//:skarupke",
+    ],
 )

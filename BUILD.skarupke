@@ -1,0 +1,10 @@
+cc_library(
+    name = "skarupke",
+    includes = [""],
+    hdrs = [
+        "bytell_hash_map.hpp",
+        "flat_hash_map.hpp",
+        "unordered_map.hpp",
+    ],
+    visibility = ["//visibility:public"],
+)
