@@ -63,6 +63,14 @@ http_archive(
     urls = ["https://github.com/facebook/folly/archive/master.zip"],
 )
 
+# ska::flat_hash_set and ska::bytell_hash_set
+http_archive(
+    name = "skarupke",
+    build_file = "//:BUILD.skarupke",
+    strip_prefix = "flat_hash_map-master",
+    urls = ["https://github.com/skarupke/flat_hash_map/archive/master.zip"],
+)
+
 http_archive(
     name = "com_github_nelhage_rules_boost",
     strip_prefix = "rules_boost-master",
