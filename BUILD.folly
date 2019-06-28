@@ -15,8 +15,8 @@ cc_library(
     defines = [
         "FOLLY_NO_CONFIG",
         "FOLLY_HAVE_MEMRCHR",
-	"FOLLY_HAVE_SENDMMSG",
-	"FOLLY_HAVE_RECVMMSG",
+        "FOLLY_HAVE_SENDMMSG",
+        "FOLLY_HAVE_RECVMMSG",
     ],
     visibility = ["//visibility:public"],
     deps = [
