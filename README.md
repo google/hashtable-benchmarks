@@ -5,7 +5,7 @@ Benchmarks for comparing hashtable implementations.
 1. Build:
 
 ```shell
-bazel build --cxxopt='-std=c++14' :hashtable_benchmarks
+bazel build :hashtable_benchmarks
 ```
 
 Note that `-c opt` is the default.
