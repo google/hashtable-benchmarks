@@ -6,6 +6,7 @@ cc_library(
         "folly/ScopeGuard.cpp",
         "folly/container/detail/F14Table.cpp",
         "folly/lang/Assume.cpp",
+        "folly/lang/ToAscii.cpp",
         "folly/lang/SafeAssert.cpp",
         "folly/net/NetOps.cpp",
     ],
