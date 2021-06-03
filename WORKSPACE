@@ -26,8 +26,8 @@ http_archive(
 # Google benchmark.
 http_archive(
     name = "gbench",
-    strip_prefix = "benchmark-master",
-    urls = ["https://github.com/google/benchmark/archive/master.zip"],
+    strip_prefix = "benchmark-main",
+    urls = ["https://github.com/google/benchmark/archive/main.zip"],
 )
 
 # Google dense_hash_set
