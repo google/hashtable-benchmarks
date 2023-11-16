@@ -43,7 +43,7 @@ cc_binary(
         "@google_sparsehash//:sparsehash",
         "@skarupke//:skarupke",
     ],
-    stamp = True,
+    stamp = 1,
 )
 
 cc_binary(
