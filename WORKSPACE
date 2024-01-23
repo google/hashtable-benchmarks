@@ -59,7 +59,7 @@ http_archive(
 http_archive(
     name = "facebook_folly",
     build_file = "//:BUILD.folly",
-    strip_prefix = "folly-master",
+    strip_prefix = "folly-main",
     urls = ["https://github.com/facebook/folly/archive/master.zip"],
 )
 
