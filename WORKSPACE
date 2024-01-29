@@ -60,7 +60,7 @@ http_archive(
     name = "facebook_folly",
     build_file = "//:BUILD.folly",
     strip_prefix = "folly-main",
-    urls = ["https://github.com/facebook/folly/archive/master.zip"],
+    urls = ["https://github.com/facebook/folly/archive/main.zip"],
 )
 
 # ska::flat_hash_set and ska::bytell_hash_set
